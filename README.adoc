@@ -1,0 +1,7 @@
+= Thompson Hack Upon Go
+Equim <https://github.com/Equim-chan[@Equim-chan]>
+
+Doc is WIP.
+
+Check https://ekyu.moe/article/thompson-hack-on-golang/ for details.
+
