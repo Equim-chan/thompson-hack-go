@@ -74,7 +74,7 @@ $ go/bin/go run poc.go
 ----
 
 === Stage 3
-Feel free to ask others to audit the source tree given the binary built in Stage 2. It is broken, while looking total legit.
+Feel free to ask others to audit the source tree given the binary built in Stage 2. It is just broken, while looking total legit. With the binary built in Stage 2, even if you build the clean source again, and use the built binary to re-bootstrap it again and so on, the back door will still be alive.
 
 === Details
 Please check https://ekyu.moe/article/thompson-hack-on-golang/.
