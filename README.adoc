@@ -1,7 +1,80 @@
 = Thompson Hack Upon Go
 Equim <https://github.com/Equim-chan[@Equim-chan]>
 
-Check https://ekyu.moe/article/thompson-hack-on-golang/ for details.
+== Instructions
+=== Prepare
+We are going to apply the hack patches on go1.10, however you can still use newer versions of Go for bootstraping, i.e. the `GOROOT` in the first `GOROOT_BOOTSTRAP`.
 
-== Steps
+[source,shell]
+----
+$ git clone https://github.com/Equim-chan/thompson-hack-go.git
+$ cd thompson-hack-go
+$ git submodule init
+$ git submodule update
+$ cd go
+$ git checkout -b thompson-hack
+$ cd ..
+----
 
+=== Stage 0
+The first stage is simple. A `hack` package is added to the stdlib, along with its test. Nothing special at the moment, and the ouput of `poc.go` is legit.
+
+[source,shell]
+----
+$ cd go
+$ git am ../0001-hack-stage0-add-package-hack.patch
+$ export GOROOT_BOOTSTRAP="$(go env GOROOT)"
+$ export GOROOT="$(pwd)"
+$ cd src
+$ ./make.bash
+$ cd ../..
+$ go/bin/go version
+$ go/bin/go test -v hack
+$ go/bin/go run poc.go
+$ mkdir go-stage0
+$ cp -r go/{bin,pkg,src,lib,misc,api} go-stage0
+----
+
+=== Stage 1
+Things become more complex here. The only file we modify is `src/cmd/compile/internal/gc/noder.go` as it is the entrance point where source file is loaded to parse. A hook for `os.Open` is injected and therefore we can spoof the source file to read.
+
+There are several target files, the filenames and exploit content of which are pre-encoded via `compress/flate` so that it can evade some basic static scan, also making it easier to inject, as in this binary form, we don't need to care about the escape for tokens like `{backtick}` anymore.
+
+The constant `quine` at the end of the file is the key to this hack. `quine` is contains all the necessary knowledge of the source file itself that grants the exploit the right to "remember" and "reproduce" itself without any external force.
+
+[source,shell]
+----
+$ cd go
+$ git am ../0002-hack-stage1-add-bootstrappable-backdoor-targeted-pac.patch
+$ export GOROOT_BOOTSTRAP="$(readlink -f ../go-stage0)"
+$ cd src
+$ ./make.bash
+$ cd ../..
+$ go/bin/go version
+$ go/bin/go test -v hack
+$ go/bin/go run poc.go
+$ mkdir go-stage1
+$ cp -r go/{bin,pkg,src,lib,misc,api} go-stage1
+----
+
+=== Stage 2
+Damage has already been made, and the exploit has been "rooted". The code to bootstrap the back door is no longer needed, so the only thing we do in this step is just to remove them. Most evidence of the back door is going to be wiped, except the git history of course.
+
+[source,shell]
+----
+$ cd go
+$ git am ../0003-hack-stage2-remove-all-codes-about-the-backdoor.patch
+$ export GOROOT_BOOTSTRAP="$(readlink -f ../go-stage1)"
+$ cd src
+$ ./make.bash
+$ cd ../..
+$ go/bin/go version
+$ go/bin/go test -v hack
+$ go/bin/go run poc.go
+----
+
+=== Stage 3
+Feel free to ask others to audit the source tree given the binary built in Stage 2. It is broken, while looking total legit.
+
+=== Details
+Please check https://ekyu.moe/article/thompson-hack-on-golang/.
